@@ -1844,6 +1844,8 @@ var modals = function modals() {
   bindModal('.button-consultation', '.popup-consultation', '.popup-consultation .popup-close'); // функция модального окна для кнопки "подробнее об услуге"
 
   showModalByTime('.popup-consultation', 6000); // вызываем функцию открытия окна через определенное время
+
+  showModalByTime('.popup-consultation', 6000); // вызываем функцию открытия окна через определенное время
 };
 
 /* harmony default export */ __webpack_exports__["default"] = (modals);
