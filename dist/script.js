@@ -1675,6 +1675,8 @@ window.addEventListener('DOMContentLoaded', function () {
   // ждем пока загрузится вся DOM структура
   'use strict';
 
+  var clickButton = false; // флаг нажатия хотя бы 1 кнопки. Изначально ни одна кнопка не нажата, соответственно false
+
   Object(_modules_modals__WEBPACK_IMPORTED_MODULE_0__["default"])(); // функция работы модальных окон
 });
 
@@ -1697,6 +1699,8 @@ __webpack_require__.r(__webpack_exports__);
 
 
 var modals = function modals() {
+  var clickButton = false;
+
   function bindModal(triggerSelector, modalSelector, closeSelector) {
     var closeClickOverlay = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
     // trigger - кнопка вызывающая окно, modal - селектор окна, close - крестик закрытия окна, closeClickOverlay - при клике на подложку окно будет закрыто
@@ -1711,10 +1715,10 @@ var modals = function modals() {
     scroll = calcScroll(),
         // вычисляем ширину полосы прокрутки
     htmlFontSize = calcGift(),
-        // берем значение font-size html документа. Нужно т.к. значения положения не в px а в rem
-    GiftElem = document.querySelector('.fixed-gift'),
+        // берем значение font-size html документа. Нужно т.к. значения положения не в px а в rem, так то можно было не заморачиваться и сделать все в px
+    giftElem = document.querySelector('.fixed-gift'),
         // получаем элемент с подарком
-    rightGift = +getComputedStyle(GiftElem).right.slice(0, 2); // получаем значение положения по Y элемента с подарком
+    rightGift = +getComputedStyle(giftElem).right.slice(0, 2); // получаем значение положения по Y элемента с подарком
 
     trigger.forEach(function (item) {
       // т.к. получаем псевдомассив, то надо его перебрать и навесить обработчик на каждую кнопку открытия окна
@@ -1725,11 +1729,18 @@ var modals = function modals() {
           e.preventDefault(); // отменяем стандартное поведение браузера
         }
 
+        clickButton = true; // переводим флаг нажатия любой кнопки в true, нужно для того, чтобы окно в конце страницы не появилось
+
+        if (item == giftElem) {
+          // если переданная кнопка является кнопкой подарка, то
+          giftElem.style.display = 'none'; // скрываем этот подарок
+        }
+
         windows.forEach(function (item) {
           // перебираем все модальные окна
           item.style.display = 'none'; // скрываем их
         });
-        modal.style.display = 'block'; // показваем модальное окно
+        modal.style.display = 'block'; // показываем модальное окно
 
         document.body.style.overflow = 'hidden'; // запрет прокрутки страницы во время того как открыто модальное окно
 
@@ -1750,7 +1761,7 @@ var modals = function modals() {
 
       document.body.style.marginRight = "0px"; // убираем сдвиг всей страницы на ширину полосы прокрутки, чтобы страница не дергалась при закрытии модального окна
 
-      var rightGiftOpen = +getComputedStyle(GiftElem).right.slice(0, 2);
+      var rightGiftOpen = +getComputedStyle(giftElem).right.slice(0, 2);
       document.querySelector('.fixed-gift').style.right = "".concat((rightGiftOpen - scroll) / htmlFontSize, "rem");
     });
     modal.addEventListener('click', function (e) {
@@ -1767,7 +1778,7 @@ var modals = function modals() {
 
         document.body.style.marginRight = "0px"; // убираем сдвиг всей страницы на ширину полосы прокрутки, чтобы страница не дергалась при закрытии модального окна
 
-        var rightGiftOpen = +getComputedStyle(GiftElem).right.slice(0, 2);
+        var rightGiftOpen = +getComputedStyle(giftElem).right.slice(0, 2);
         document.querySelector('.fixed-gift').style.right = "".concat((rightGiftOpen - scroll) / htmlFontSize, "rem");
       }
     });
@@ -1793,15 +1804,16 @@ var modals = function modals() {
 
         var htmlFontSize = calcGift(),
             // берем значение font-size html документа. Нужно т.к. значения положения не в px а в rem
-        GiftElem = document.querySelector('.fixed-gift'),
+        giftElem = document.querySelector('.fixed-gift'),
             // получаем элемент с подарком
-        rightGift = +getComputedStyle(GiftElem).right.slice(0, 2),
+        rightGift = +getComputedStyle(giftElem).right.slice(0, 2),
             // получаем значение положения по Y элемента с подарком
-        scroll = calcScroll(); // вычисляем ширину полосы прокрутки
+        _scroll = calcScroll(); // вычисляем ширину полосы прокрутки
 
-        document.body.style.marginRight = "".concat(scroll, "px"); // добавляем сдвиг всей страницы на ширину полосы прокрутки, чтобы страница не дергалась при открытии модального окна
 
-        document.querySelector('.fixed-gift').style.right = "".concat((scroll + rightGift) / htmlFontSize, "rem"); // добавляем сдвиг к элементу с подарком, чтобы он не дергался при открытии модального окна
+        document.body.style.marginRight = "".concat(_scroll, "px"); // добавляем сдвиг всей страницы на ширину полосы прокрутки, чтобы страница не дергалась при открытии модального окна
+
+        document.querySelector('.fixed-gift').style.right = "".concat((_scroll + rightGift) / htmlFontSize, "rem"); // добавляем сдвиг к элементу с подарком, чтобы он не дергался при открытии модального окна
       }
     }, time); // передаем время, через которое появится окно
   }
@@ -1836,16 +1848,43 @@ var modals = function modals() {
       // т.к. это псевдомассив используем forEach
       calcHtmlFontSize = +getComputedStyle(item).fontSize.slice(0, 2); // получаем свойство font-size html документа
     });
-    return calcHtmlFontSize; // возвраoftv значение font-size
+    return calcHtmlFontSize; // возвращаем значение font-size
+  }
+
+  function endPageModal(modalSelector, giftSelector) {
+    // функция для показа окна, если страница пролистана до конца и ни одна кнопка не была нажата
+    var scrollHeight = Math.max( // вычисляем длину страницы с учетом прокрутки
+    document.body.scrollHeight, document.documentElement.scrollHeight, document.body.offsetHeight, document.documentElement.offsetHeight, document.body.clientHeight, document.documentElement.clientHeight);
+    window.addEventListener('scroll', function () {
+      // навешиваем обработчик скрола на всю страницу
+      if (!clickButton && window.scrollY >= scrollHeight * 0.97) {
+        // если кнопка не была нажата и пролистано более 95% страницы, то
+        var modal = document.querySelector(modalSelector),
+            // получаем само окно
+        giftElem = document.querySelector(giftSelector); // получаем элемент с подарком
+
+        giftElem.style.display = 'none'; // скрываем элемент с подарком
+
+        modal.style.display = 'block'; // показываем модальное окно
+
+        clickButton = true; // переводим флаг нажатия кнопки в true, чтобы этот блок кода выполнился только 1 раз
+
+        document.body.style.overflow = 'hidden'; // запрет прокрутки страницы во время того как открыто модальное окно
+
+        document.body.style.marginRight = "".concat(scroll, "px"); // добавляем сдвиг всей страницы на ширину полосы прокрутки, чтобы страница не дергалась при открытии модального окна
+      }
+    });
   }
 
   bindModal('.button-design', '.popup-design', '.popup-design .popup-close'); // функция модального окна для кнопки "заказать дизайн"
 
   bindModal('.button-consultation', '.popup-consultation', '.popup-consultation .popup-close'); // функция модального окна для кнопки "подробнее об услуге"
 
-  showModalByTime('.popup-consultation', 6000); // вызываем функцию открытия окна через определенное время
+  bindModal('.fixed-gift', '.popup-gift', '.popup-gift .popup-close'); // функция модального окна для кнопки "подарок"
 
-  showModalByTime('.popup-consultation', 6000); // вызываем функцию открытия окна через определенное время
+  showModalByTime('.popup-consultation', 3000); // вызываем функцию открытия окна через определенное время
+
+  endPageModal('.popup-gift', '.fixed-gift'); // вызываем функцию показа окна в конце страницы
 };
 
 /* harmony default export */ __webpack_exports__["default"] = (modals);
