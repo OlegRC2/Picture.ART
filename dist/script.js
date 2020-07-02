@@ -1697,9 +1697,11 @@ __webpack_require__.r(__webpack_exports__);
 
 
 var modals = function modals() {
+  var btnPressed; // флаг для определения нажималась ли хоть одна кнопка
+
   function bindModal(triggerSelector, modalSelector, closeSelector) {
-    var closeClickOverlay = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
-    // trigger - кнопка вызывающая окно, modal - селектор окна, close - крестик закрытия окна, closeClickOverlay - при клике на подложку окно будет закрыто
+    var destroy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+    // trigger - кнопка вызывающая окно, modal - селектор окна, close - крестик закрытия окна, destroy - удаление этого элемента со страницы
     var trigger = document.querySelectorAll(triggerSelector),
         // получаем кнопку вызова окна
     modal = document.querySelector(modalSelector),
@@ -1725,9 +1727,17 @@ var modals = function modals() {
           e.preventDefault(); // отменяем стандартное поведение браузера
         }
 
+        btnPressed = true; // ставим флаг в позицию true, т.к. кнопка нажата
+
+        if (destroy) {
+          item.style.display = 'none'; // удаляем со страницы этот элемент
+        }
+
         windows.forEach(function (item) {
           // перебираем все модальные окна
           item.style.display = 'none'; // скрываем их
+
+          item.classList.add('animated', 'fadeIn'); // добавление анимации к окнам
         });
         modal.style.display = 'block'; // показваем модальное окно
 
@@ -1750,12 +1760,13 @@ var modals = function modals() {
 
       document.body.style.marginRight = "0px"; // убираем сдвиг всей страницы на ширину полосы прокрутки, чтобы страница не дергалась при закрытии модального окна
 
-      var rightGiftOpen = +getComputedStyle(GiftElem).right.slice(0, 2);
+      var rightGiftOpen = +getComputedStyle(GiftElem).right.slice(0, 2); // получаем значение положения по Y элемента с подарком
+
       document.querySelector('.fixed-gift').style.right = "".concat((rightGiftOpen - scroll) / htmlFontSize, "rem");
     });
     modal.addEventListener('click', function (e) {
       // закрытие окна при клике вне окна
-      if (e.target === modal && closeClickOverlay) {
+      if (e.target === modal) {
         // если место клика входит в родительский элемент окна, но не само окно (у него другой класс) и параметр closeClickOverlay = true
         windows.forEach(function (item) {
           // перебираем все модальные окна
@@ -1767,7 +1778,8 @@ var modals = function modals() {
 
         document.body.style.marginRight = "0px"; // убираем сдвиг всей страницы на ширину полосы прокрутки, чтобы страница не дергалась при закрытии модального окна
 
-        var rightGiftOpen = +getComputedStyle(GiftElem).right.slice(0, 2);
+        var rightGiftOpen = +getComputedStyle(GiftElem).right.slice(0, 2); // получаем значение положения по Y элемента с подарком
+
         document.querySelector('.fixed-gift').style.right = "".concat((rightGiftOpen - scroll) / htmlFontSize, "rem");
       }
     });
@@ -1839,11 +1851,26 @@ var modals = function modals() {
     return calcHtmlFontSize; // возвраoftv значение font-size
   }
 
+  function openByScroll(selector) {
+    // функция показа модального окна в конце страницы, внутрь передаем селектор окна
+    window.addEventListener('scroll', function () {
+      // вешаем на окно обработчик скролла
+      if (!btnPressed && window.pageYOffset + document.documentElement.clientHeight >= document.documentElement.scrollHeight) {
+        // если кнопка не нажата и пролистано да конца. pageYOffset - сколько уже отлистано сверху, clientHeight - контент который сейчас виден, scrollHeight - общая "длина" страницы
+        document.querySelector(selector).click(); // .click() - программно кликнули на этот элемент и сработает обработчик клика, навешанный ранее и запустится вся цепочка действий
+      }
+    });
+  }
+
   bindModal('.button-design', '.popup-design', '.popup-design .popup-close'); // функция модального окна для кнопки "заказать дизайн"
 
   bindModal('.button-consultation', '.popup-consultation', '.popup-consultation .popup-close'); // функция модального окна для кнопки "подробнее об услуге"
 
-  showModalByTime('.popup-consultation', 6000); // вызываем функцию открытия окна через определенное время
+  bindModal('.fixed-gift', '.popup-gift', '.popup-gift .popup-close', true); // функция модального окна для кнопки "подарок"
+
+  showModalByTime('.popup-consultation', 3000); // вызываем функцию открытия окна через определенное время
+
+  openByScroll('.fixed-gift'); // вызываем функцию показа окна в конце страницы
 };
 
 /* harmony default export */ __webpack_exports__["default"] = (modals);
