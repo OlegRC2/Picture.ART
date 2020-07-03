@@ -137,7 +137,7 @@ const modals = () => {
     bindModal('.button-consultation', '.popup-consultation', '.popup-consultation .popup-close');   // функция модального окна для кнопки "подробнее об услуге"
     bindModal('.fixed-gift', '.popup-gift', '.popup-gift .popup-close');    // функция модального окна для кнопки "подарок"
 
-    showModalByTime('.popup-consultation', 3000);                   // вызываем функцию открытия окна через определенное время
+    //showModalByTime('.popup-consultation', 3000);                   // вызываем функцию открытия окна через определенное время
 
     endPageModal('.popup-gift', '.fixed-gift');                     // вызываем функцию показа окна в конце страницы
     

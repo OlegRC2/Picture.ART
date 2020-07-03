@@ -1670,6 +1670,8 @@ module.exports = g;
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _modules_modals__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./modules/modals */ "./src/js/modules/modals.js");
+/* harmony import */ var _modules_sliders__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./modules/sliders */ "./src/js/modules/sliders.js");
+
 
 window.addEventListener('DOMContentLoaded', function () {
   // ждем пока загрузится вся DOM структура
@@ -1678,6 +1680,8 @@ window.addEventListener('DOMContentLoaded', function () {
   var clickButton = false; // флаг нажатия хотя бы 1 кнопки. Изначально ни одна кнопка не нажата, соответственно false
 
   Object(_modules_modals__WEBPACK_IMPORTED_MODULE_0__["default"])(); // функция работы модальных окон
+
+  Object(_modules_sliders__WEBPACK_IMPORTED_MODULE_1__["default"])('.main-slider-item', 5000); // функция для работы слайдеров
 });
 
 /***/ }),
@@ -1881,13 +1885,77 @@ var modals = function modals() {
   bindModal('.button-consultation', '.popup-consultation', '.popup-consultation .popup-close'); // функция модального окна для кнопки "подробнее об услуге"
 
   bindModal('.fixed-gift', '.popup-gift', '.popup-gift .popup-close'); // функция модального окна для кнопки "подарок"
-
-  showModalByTime('.popup-consultation', 3000); // вызываем функцию открытия окна через определенное время
+  //showModalByTime('.popup-consultation', 3000);                   // вызываем функцию открытия окна через определенное время
 
   endPageModal('.popup-gift', '.fixed-gift'); // вызываем функцию показа окна в конце страницы
 };
 
 /* harmony default export */ __webpack_exports__["default"] = (modals);
+
+/***/ }),
+
+/***/ "./src/js/modules/sliders.js":
+/*!***********************************!*\
+  !*** ./src/js/modules/sliders.js ***!
+  \***********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core-js/modules/web.dom-collections.for-each */ "./node_modules/core-js/modules/web.dom-collections.for-each.js");
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0__);
+
+
+var sliders = function sliders(slideOne, time) {
+  // slideOne - слайды первого слайдера, time - время через которое слайды будут сами меняться                                       
+  var slides = document.querySelectorAll(slideOne); // передаем сюда слайды для первого слайдера
+
+  var count = 0; // задаем переменную счетчика слайдов
+
+  function slideHide() {
+    // функция скрытия всех слайдов
+    slides.forEach(function (item) {
+      // т.к. получаем псевдомассив, то используем forEach
+      item.classList.add('hide'); // добавляем класс скрытия из bootstrap.css
+
+      item.classList.remove('show'); // удаляем класс показа
+    });
+  }
+
+  function slideShow() {
+    var i = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+    // функция показа одного элемента. Задаем i=0 по дефолту, чтобы сначала был активен первый слайд
+    slides[i].classList.add('show', 'animated', 'slideInDown'); // добавляем первому элементу класс показа с анимацией
+
+    slides[i].classList.remove('hide'); // удаляем с первого элемента класс скрытия
+  }
+
+  slideHide(); // скрываем все слайды
+
+  slideShow(); // показываем первый слайд
+
+  function slideStep() {
+    // функция переключения слайда
+    slideHide(); // скрываем все слайды
+
+    count++; // добавляем к счетчику слайдов +1
+
+    slideShow(count); // показываем следующий слайд
+  }
+
+  setInterval(function () {
+    // функция автоматического переключения слайдов
+    if (count + 1 >= slides.length) {
+      // если счетчик выходит за пределы кол-ва слайдов
+      count = -1; // сбрасываем счетчик на -1, т.к. на кажом шаге прибавляется 1, а первый элемент это 0
+    }
+
+    slideStep(); // выполняем функцию переключения слайда
+  }, time); // сюда передается время для автопереключения
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (sliders);
 
 /***/ })
 
