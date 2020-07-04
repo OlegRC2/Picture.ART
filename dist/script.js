@@ -1681,7 +1681,7 @@ window.addEventListener('DOMContentLoaded', function () {
 
   Object(_modules_modals__WEBPACK_IMPORTED_MODULE_0__["default"])(); // функция работы модальных окон
 
-  Object(_modules_sliders__WEBPACK_IMPORTED_MODULE_1__["default"])('.main-slider-item', 5000); // функция для работы слайдеров
+  Object(_modules_sliders__WEBPACK_IMPORTED_MODULE_1__["default"])('.main-slider-item', 5000, '.feedback-slider-item', '.main-next-btn', '.main-prev-btn'); // функция для работы слайдеров
 });
 
 /***/ }),
@@ -1907,8 +1907,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0__);
 
 
-var sliders = function sliders(slideOne, time) {
-  // slideOne - слайды первого слайдера, time - время через которое слайды будут сами меняться                                       
+var sliders = function sliders(slideOne, time, slideTwo, next, prev) {
+  // slideOne - слайды первого слайдера, time - время через которое слайды будут сами меняться, slideTwo - слайды второго слайдера, next - стрелка вперед, prev - стрелка назад                                       
+  // Первый слайдер
   var slides = document.querySelectorAll(slideOne); // передаем сюда слайды для первого слайдера
 
   var count = 0; // задаем переменную счетчика слайдов
@@ -1953,6 +1954,112 @@ var sliders = function sliders(slideOne, time) {
 
     slideStep(); // выполняем функцию переключения слайда
   }, time); // сюда передается время для автопереключения
+  // Второй слайдер
+
+  var nextSlide = document.querySelector(next),
+      // получаем кнопку дальше
+  prevSlide = document.querySelector(prev),
+      // получаем кнопку назад
+  slidesTwo = document.querySelectorAll(slideTwo); // передаем сюда слайды для второго слайдера
+
+  var countTwo = 0,
+      // задаем переменную счетчика слайдов
+  intervalId = 0; // переменная для остановки автоматического переключения слайдера
+
+  function slideHideTwo() {
+    // функция скрытия всех слайдов
+    slidesTwo.forEach(function (item) {
+      // т.к. получаем псевдомассив, то используем forEach
+      item.classList.add('hide'); // добавляем класс скрытия из bootstrap.css
+
+      item.classList.remove('show'); // удаляем класс показа
+
+      item.classList.remove('slideInRight'); // удаляем класс анимации вправо
+
+      item.classList.remove('slideInLeft'); // удаляем класс анимации влево
+    });
+  }
+
+  function slideShowNext() {
+    var i = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+    // функция показа элемента при нажатии next. Задаем i=0 по дефолту, чтобы сначала был активен первый слайд
+    slidesTwo[i].classList.add('show', 'animated', 'slideInRight'); // добавляем первому элементу класс показа с анимацией
+
+    slidesTwo[i].classList.remove('hide'); // удаляем с первого элемента класс скрытия
+  }
+
+  function slideShowPrev(i) {
+    // функция показа элемента при нажатии prev
+    slidesTwo[i].classList.add('show', 'animated', 'slideInLeft'); // добавляем первому элементу класс показа с анимацией
+
+    slidesTwo[i].classList.remove('hide'); // удаляем с первого элемента класс скрытия
+  }
+
+  slideHideTwo(); // скрываем все слайды
+
+  slideShowNext(); // показываем первый слайд
+
+  function slideStepTwo() {
+    // функция автоматического переключения слайда
+    slideHideTwo(); // скрываем все слайды
+
+    countTwo++; // добавляем к счетчику слайдов +1
+
+    slideShowNext(countTwo); // показываем следующий слайд
+  }
+
+  function interval() {
+    // функция автоматического переключения слайдов через заданное время
+    intervalId = setInterval(function () {
+      // записываем в переменную значение setInterval
+      if (countTwo + 1 >= slidesTwo.length) {
+        // если счетчик выходит за пределы кол-ва слайдов
+        countTwo = -1; // сбрасываем счетчик на -1, т.к. на кажом шаге прибавляется 1, а первый элемент это 0
+      }
+
+      slideStepTwo(); // выполняем функцию переключения слайда
+    }, time);
+    return intervalId; // возвращаем id функции setInerval для последующей остановки
+  }
+
+  intervalId = interval(); // запускаем автопереключение
+
+  nextSlide.addEventListener('click', function () {
+    // навешиваем обработчик события на кнопку дальше
+    if (countTwo + 1 >= slidesTwo.length) {
+      // если счетчик выходит за пределы кол-ва слайдов
+      countTwo = -1; // сбрасываем счетчик на -1, т.к. на кажом шаге прибавляется 1, а первый элемент это 0
+    }
+
+    slideStepTwo(); // переключаем слайд
+
+    clearInterval(intervalId); // останавливаем автопереключение
+
+    setTimeout(function () {
+      // запускаем функцию для запуска автопереключения 
+      intervalId = interval(); // запускаем автопереключение
+    }, time / time); // чтобы следующий слайд переключился через то же время, передаем сюда 1
+  });
+  prevSlide.addEventListener('click', function () {
+    // навешиваем обработчик события на кнопку назад
+    countTwo--; // уменьшаем счетчик на 1
+
+    if (countTwo + 1 == 0) {
+      // если счетчик дошел до первого слайда
+      countTwo = slidesTwo.length - 1; // задаем счетчику значение последнего слайда
+    }
+
+    slideHideTwo(); // скрываем все слайды
+
+    slideShowPrev(countTwo); // переключаем слайд
+
+    clearInterval(intervalId); // останавливаем автопереключение
+
+    setTimeout(function () {
+      // запускаем функцию для запуска автопереключения 
+      intervalId = interval(); // запускаем автопереключение
+    }, time / time); // чтобы следующий слайд переключился через то же время, передаем сюда 1
+  });
 };
 
 /* harmony default export */ __webpack_exports__["default"] = (sliders);
