@@ -119,8 +119,8 @@ const modals = () => {
         );
 
         window.addEventListener('scroll', () => {                   // навешиваем обработчик скрола на всю страницу
-
-            if (!clickButton && window.scrollY >= scrollHeight * 0.97) {    // если кнопка не была нажата и пролистано более 95% страницы, то
+           
+            if (!clickButton && window.scrollY >= scrollHeight * 0.84) {    // если кнопка не была нажата и пролистано более 84% страницы, то
             
                 const modal = document.querySelector(modalSelector),    // получаем само окно
                       giftElem = document.querySelector(giftSelector);  // получаем элемент с подарком

@@ -1,5 +1,6 @@
 import modals from './modules/modals';
 import sliders from './modules/sliders';
+import forms from './modules/forms';
 
 
 
@@ -11,6 +12,9 @@ window.addEventListener('DOMContentLoaded', () => {                             
 
     modals();                                                                   // функция работы модальных окон
     sliders('.main-slider-item', 5000, '.feedback-slider-item', '.main-next-btn', '.main-prev-btn');    // функция для работы слайдеров
+    forms();                                                                    // функция для работы с формами
+
+    
 
     
 
