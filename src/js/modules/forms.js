@@ -1,3 +1,6 @@
+import checkInputsPhone from './checkInputsPhone';                                  // импортируем файл с функцией валидации инпута для номера телефона
+import checkInputsNameAndComm from './checkInputsNameAndComm';                      // импортируем файл с функцией валидации инпута для имени и комментария
+
 const forms = () => {                                                               // функция для работы с формами
 
     const form = document.querySelectorAll('form'),                                 // берем все формы
@@ -13,6 +16,8 @@ const forms = () => {                                                           
         failure: 'Что-то пошло не так...',
     };
 
+    checkInputsPhone('input[name="phone"]');                                        // разрешаем вводить в инпут номера телефона нужные значения
+    checkInputsNameAndComm('input[name="name"]', '[name="message"]');               // разрешаем вводить в инпуты имени и комментария нужные значения
 
     const postData = async (url, data) => {                                         // функция отправки на сервер
         let res = await fetch(url, {                                                // отправялем запрос на сервер
