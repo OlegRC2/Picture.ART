@@ -1,12 +1,10 @@
-// import checkNumInputs from './checkNumInputs';                                      // импортируем файл с функцией проверки инпутов на ввод цифр
+import {postData} from '../services/requests';                                      // импортируем функцию отправки запроса из файла 
 
 const forms = () => {                                                               
 
     const form = document.querySelectorAll('form'),                                 // берем все формы
           inputs = document.querySelectorAll('input'),                              // берем все инпуты
           upload = document.querySelectorAll('[name="upload"]');                    // берем все инпуты для загрузки файлов
-
-    // checkNumInputs('input[name="user_phone"]');                                     // разрешаем вводить в инпут только цифры
 
     const message = {                                                               // объект с сообщениями пользователю
         loading: 'Загрузка...',
@@ -21,15 +19,6 @@ const forms = () => {
         designer: 'assets/server.php',                                              // путь для отправки сообщения с картинкой пользователя
         question: 'assets/question.php'                                             // путь для отправки сообщения с вопросом
     }
-
-    const postData = async (url, data) => {                                         // функция отправки на сервер
-        let res = await fetch(url, {                                                // отправялем запрос на сервер
-            method: 'POST',                                                         // метод запроса
-            body: data                                                              // отправляемые данные
-        });              
-        
-        return await res.text();                                                    // ждем пока данные преобразуются в текст .text(). Так же говорим, что дальше скрипт не выполнялся, пока не выполнится res (await)
-    };
 
     const clearInputs = () => {                                                     // функция очистки полей форм
         inputs.forEach(item => {                                                    // берем каждый инпут

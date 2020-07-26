@@ -3,6 +3,7 @@ import sliders from './modules/sliders';
 import forms from './modules/forms';
 import mask from './modules/mask';
 import checkTextInputs from './modules/checkTextInputs';
+import showMoreStyles from './modules/showMoreStyles';
 
 
 
@@ -17,6 +18,7 @@ window.addEventListener('DOMContentLoaded', () => {                             
     mask('[name="phone"]');                                                     // функция для работы маски инпута
     checkTextInputs('[name="name"]');                                           // функция для валидации инпута имени
     checkTextInputs('[name="message"]');                                        // функция для валидации инпута комментария
+    showMoreStyles('.button-styles', '#styles .row');                           // функция подгрузки карточек (в блоке с id=syle есть блок с классом row)
     
 
 
