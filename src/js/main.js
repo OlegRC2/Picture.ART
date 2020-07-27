@@ -4,6 +4,7 @@ import forms from './modules/forms';
 import mask from './modules/mask';
 import checkTextInputs from './modules/checkTextInputs';
 import showMoreStyles from './modules/showMoreStyles';
+import calc from './modules/calc';
 
 
 
@@ -19,6 +20,7 @@ window.addEventListener('DOMContentLoaded', () => {                             
     checkTextInputs('[name="name"]');                                           // функция для валидации инпута имени
     checkTextInputs('[name="message"]');                                        // функция для валидации инпута комментария
     showMoreStyles('.button-styles', '#styles .row');                           // функция подгрузки карточек (в блоке с id=syle есть блок с классом row)
+    calc('#size', '#material', '#options', '.promocode', '.calc-price');        // функция для работы калькулятора
     
 
 
