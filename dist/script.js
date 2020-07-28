@@ -102,6 +102,26 @@ module.exports = function (it) {
 
 /***/ }),
 
+/***/ "./node_modules/core-js/internals/advance-string-index.js":
+/*!****************************************************************!*\
+  !*** ./node_modules/core-js/internals/advance-string-index.js ***!
+  \****************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var charAt = __webpack_require__(/*! ../internals/string-multibyte */ "./node_modules/core-js/internals/string-multibyte.js").charAt;
+
+// `AdvanceStringIndex` abstract operation
+// https://tc39.github.io/ecma262/#sec-advancestringindex
+module.exports = function (S, index, unicode) {
+  return index + (unicode ? charAt(S, index).length : 1);
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/core-js/internals/an-instance.js":
 /*!*******************************************************!*\
   !*** ./node_modules/core-js/internals/an-instance.js ***!
@@ -767,6 +787,118 @@ module.exports = function (exec) {
     return !!exec();
   } catch (error) {
     return true;
+  }
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/core-js/internals/fix-regexp-well-known-symbol-logic.js":
+/*!******************************************************************************!*\
+  !*** ./node_modules/core-js/internals/fix-regexp-well-known-symbol-logic.js ***!
+  \******************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var createNonEnumerableProperty = __webpack_require__(/*! ../internals/create-non-enumerable-property */ "./node_modules/core-js/internals/create-non-enumerable-property.js");
+var redefine = __webpack_require__(/*! ../internals/redefine */ "./node_modules/core-js/internals/redefine.js");
+var fails = __webpack_require__(/*! ../internals/fails */ "./node_modules/core-js/internals/fails.js");
+var wellKnownSymbol = __webpack_require__(/*! ../internals/well-known-symbol */ "./node_modules/core-js/internals/well-known-symbol.js");
+var regexpExec = __webpack_require__(/*! ../internals/regexp-exec */ "./node_modules/core-js/internals/regexp-exec.js");
+
+var SPECIES = wellKnownSymbol('species');
+
+var REPLACE_SUPPORTS_NAMED_GROUPS = !fails(function () {
+  // #replace needs built-in support for named groups.
+  // #match works fine because it just return the exec results, even if it has
+  // a "grops" property.
+  var re = /./;
+  re.exec = function () {
+    var result = [];
+    result.groups = { a: '7' };
+    return result;
+  };
+  return ''.replace(re, '$<a>') !== '7';
+});
+
+// Chrome 51 has a buggy "split" implementation when RegExp#exec !== nativeExec
+// Weex JS has frozen built-in prototypes, so use try / catch wrapper
+var SPLIT_WORKS_WITH_OVERWRITTEN_EXEC = !fails(function () {
+  var re = /(?:)/;
+  var originalExec = re.exec;
+  re.exec = function () { return originalExec.apply(this, arguments); };
+  var result = 'ab'.split(re);
+  return result.length !== 2 || result[0] !== 'a' || result[1] !== 'b';
+});
+
+module.exports = function (KEY, length, exec, sham) {
+  var SYMBOL = wellKnownSymbol(KEY);
+
+  var DELEGATES_TO_SYMBOL = !fails(function () {
+    // String methods call symbol-named RegEp methods
+    var O = {};
+    O[SYMBOL] = function () { return 7; };
+    return ''[KEY](O) != 7;
+  });
+
+  var DELEGATES_TO_EXEC = DELEGATES_TO_SYMBOL && !fails(function () {
+    // Symbol-named RegExp methods call .exec
+    var execCalled = false;
+    var re = /a/;
+
+    if (KEY === 'split') {
+      // We can't use real regex here since it causes deoptimization
+      // and serious performance degradation in V8
+      // https://github.com/zloirock/core-js/issues/306
+      re = {};
+      // RegExp[@@split] doesn't call the regex's exec method, but first creates
+      // a new one. We need to return the patched regex when creating the new one.
+      re.constructor = {};
+      re.constructor[SPECIES] = function () { return re; };
+      re.flags = '';
+      re[SYMBOL] = /./[SYMBOL];
+    }
+
+    re.exec = function () { execCalled = true; return null; };
+
+    re[SYMBOL]('');
+    return !execCalled;
+  });
+
+  if (
+    !DELEGATES_TO_SYMBOL ||
+    !DELEGATES_TO_EXEC ||
+    (KEY === 'replace' && !REPLACE_SUPPORTS_NAMED_GROUPS) ||
+    (KEY === 'split' && !SPLIT_WORKS_WITH_OVERWRITTEN_EXEC)
+  ) {
+    var nativeRegExpMethod = /./[SYMBOL];
+    var methods = exec(SYMBOL, ''[KEY], function (nativeMethod, regexp, str, arg2, forceStringMethod) {
+      if (regexp.exec === regexpExec) {
+        if (DELEGATES_TO_SYMBOL && !forceStringMethod) {
+          // The native String method already delegates to @@method (this
+          // polyfilled function), leasing to infinite recursion.
+          // We avoid it by directly calling the native @@method method.
+          return { done: true, value: nativeRegExpMethod.call(regexp, str, arg2) };
+        }
+        return { done: true, value: nativeMethod.call(str, regexp, arg2) };
+      }
+      return { done: false };
+    });
+    var stringMethod = methods[0];
+    var regexMethod = methods[1];
+
+    redefine(String.prototype, KEY, stringMethod);
+    redefine(RegExp.prototype, SYMBOL, length == 2
+      // 21.2.5.8 RegExp.prototype[@@replace](string, replaceValue)
+      // 21.2.5.11 RegExp.prototype[@@split](string, limit)
+      ? function (string, arg) { return regexMethod.call(string, this, arg); }
+      // 21.2.5.6 RegExp.prototype[@@match](string)
+      // 21.2.5.9 RegExp.prototype[@@search](string)
+      : function (string) { return regexMethod.call(string, this); }
+    );
+    if (sham) createNonEnumerableProperty(RegExp.prototype[SYMBOL], 'sham', true);
   }
 };
 
@@ -1691,6 +1823,133 @@ var TEMPLATE = String(String).split('String');
 
 /***/ }),
 
+/***/ "./node_modules/core-js/internals/regexp-exec-abstract.js":
+/*!****************************************************************!*\
+  !*** ./node_modules/core-js/internals/regexp-exec-abstract.js ***!
+  \****************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var classof = __webpack_require__(/*! ./classof-raw */ "./node_modules/core-js/internals/classof-raw.js");
+var regexpExec = __webpack_require__(/*! ./regexp-exec */ "./node_modules/core-js/internals/regexp-exec.js");
+
+// `RegExpExec` abstract operation
+// https://tc39.github.io/ecma262/#sec-regexpexec
+module.exports = function (R, S) {
+  var exec = R.exec;
+  if (typeof exec === 'function') {
+    var result = exec.call(R, S);
+    if (typeof result !== 'object') {
+      throw TypeError('RegExp exec method returned something other than an Object or null');
+    }
+    return result;
+  }
+
+  if (classof(R) !== 'RegExp') {
+    throw TypeError('RegExp#exec called on incompatible receiver');
+  }
+
+  return regexpExec.call(R, S);
+};
+
+
+
+/***/ }),
+
+/***/ "./node_modules/core-js/internals/regexp-exec.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/core-js/internals/regexp-exec.js ***!
+  \*******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var regexpFlags = __webpack_require__(/*! ./regexp-flags */ "./node_modules/core-js/internals/regexp-flags.js");
+
+var nativeExec = RegExp.prototype.exec;
+// This always refers to the native implementation, because the
+// String#replace polyfill uses ./fix-regexp-well-known-symbol-logic.js,
+// which loads this file before patching the method.
+var nativeReplace = String.prototype.replace;
+
+var patchedExec = nativeExec;
+
+var UPDATES_LAST_INDEX_WRONG = (function () {
+  var re1 = /a/;
+  var re2 = /b*/g;
+  nativeExec.call(re1, 'a');
+  nativeExec.call(re2, 'a');
+  return re1.lastIndex !== 0 || re2.lastIndex !== 0;
+})();
+
+// nonparticipating capturing group, copied from es5-shim's String#split patch.
+var NPCG_INCLUDED = /()??/.exec('')[1] !== undefined;
+
+var PATCH = UPDATES_LAST_INDEX_WRONG || NPCG_INCLUDED;
+
+if (PATCH) {
+  patchedExec = function exec(str) {
+    var re = this;
+    var lastIndex, reCopy, match, i;
+
+    if (NPCG_INCLUDED) {
+      reCopy = new RegExp('^' + re.source + '$(?!\\s)', regexpFlags.call(re));
+    }
+    if (UPDATES_LAST_INDEX_WRONG) lastIndex = re.lastIndex;
+
+    match = nativeExec.call(re, str);
+
+    if (UPDATES_LAST_INDEX_WRONG && match) {
+      re.lastIndex = re.global ? match.index + match[0].length : lastIndex;
+    }
+    if (NPCG_INCLUDED && match && match.length > 1) {
+      // Fix browsers whose `exec` methods don't consistently return `undefined`
+      // for NPCG, like IE8. NOTE: This doesn' work for /(.?)?/
+      nativeReplace.call(match[0], reCopy, function () {
+        for (i = 1; i < arguments.length - 2; i++) {
+          if (arguments[i] === undefined) match[i] = undefined;
+        }
+      });
+    }
+
+    return match;
+  };
+}
+
+module.exports = patchedExec;
+
+
+/***/ }),
+
+/***/ "./node_modules/core-js/internals/regexp-flags.js":
+/*!********************************************************!*\
+  !*** ./node_modules/core-js/internals/regexp-flags.js ***!
+  \********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var anObject = __webpack_require__(/*! ../internals/an-object */ "./node_modules/core-js/internals/an-object.js");
+
+// `RegExp.prototype.flags` getter implementation
+// https://tc39.github.io/ecma262/#sec-get-regexp.prototype.flags
+module.exports = function () {
+  var that = anObject(this);
+  var result = '';
+  if (that.global) result += 'g';
+  if (that.ignoreCase) result += 'i';
+  if (that.multiline) result += 'm';
+  if (that.dotAll) result += 's';
+  if (that.unicode) result += 'u';
+  if (that.sticky) result += 'y';
+  return result;
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/core-js/internals/require-object-coercible.js":
 /*!********************************************************************!*\
   !*** ./node_modules/core-js/internals/require-object-coercible.js ***!
@@ -1881,6 +2140,44 @@ module.exports = function (O, defaultConstructor) {
   var C = anObject(O).constructor;
   var S;
   return C === undefined || (S = anObject(C)[SPECIES]) == undefined ? defaultConstructor : aFunction(S);
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/core-js/internals/string-multibyte.js":
+/*!************************************************************!*\
+  !*** ./node_modules/core-js/internals/string-multibyte.js ***!
+  \************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var toInteger = __webpack_require__(/*! ../internals/to-integer */ "./node_modules/core-js/internals/to-integer.js");
+var requireObjectCoercible = __webpack_require__(/*! ../internals/require-object-coercible */ "./node_modules/core-js/internals/require-object-coercible.js");
+
+// `String.prototype.{ codePointAt, at }` methods implementation
+var createMethod = function (CONVERT_TO_STRING) {
+  return function ($this, pos) {
+    var S = String(requireObjectCoercible($this));
+    var position = toInteger(pos);
+    var size = S.length;
+    var first, second;
+    if (position < 0 || position >= size) return CONVERT_TO_STRING ? '' : undefined;
+    first = S.charCodeAt(position);
+    return first < 0xD800 || first > 0xDBFF || position + 1 === size
+      || (second = S.charCodeAt(position + 1)) < 0xDC00 || second > 0xDFFF
+        ? CONVERT_TO_STRING ? S.charAt(position) : first
+        : CONVERT_TO_STRING ? S.slice(position, position + 2) : (first - 0xD800 << 10) + (second - 0xDC00) + 0x10000;
+  };
+};
+
+module.exports = {
+  // `String.prototype.codePointAt` method
+  // https://tc39.github.io/ecma262/#sec-string.prototype.codepointat
+  codeAt: createMethod(false),
+  // `String.prototype.at` method
+  // https://github.com/mathiasbynens/String.prototype.at
+  charAt: createMethod(true)
 };
 
 
@@ -2764,6 +3061,62 @@ $({ target: PROMISE, stat: true, forced: INCORRECT_ITERATION }, {
 
 /***/ }),
 
+/***/ "./node_modules/core-js/modules/es.string.match.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/core-js/modules/es.string.match.js ***!
+  \*********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var fixRegExpWellKnownSymbolLogic = __webpack_require__(/*! ../internals/fix-regexp-well-known-symbol-logic */ "./node_modules/core-js/internals/fix-regexp-well-known-symbol-logic.js");
+var anObject = __webpack_require__(/*! ../internals/an-object */ "./node_modules/core-js/internals/an-object.js");
+var toLength = __webpack_require__(/*! ../internals/to-length */ "./node_modules/core-js/internals/to-length.js");
+var requireObjectCoercible = __webpack_require__(/*! ../internals/require-object-coercible */ "./node_modules/core-js/internals/require-object-coercible.js");
+var advanceStringIndex = __webpack_require__(/*! ../internals/advance-string-index */ "./node_modules/core-js/internals/advance-string-index.js");
+var regExpExec = __webpack_require__(/*! ../internals/regexp-exec-abstract */ "./node_modules/core-js/internals/regexp-exec-abstract.js");
+
+// @@match logic
+fixRegExpWellKnownSymbolLogic('match', 1, function (MATCH, nativeMatch, maybeCallNative) {
+  return [
+    // `String.prototype.match` method
+    // https://tc39.github.io/ecma262/#sec-string.prototype.match
+    function match(regexp) {
+      var O = requireObjectCoercible(this);
+      var matcher = regexp == undefined ? undefined : regexp[MATCH];
+      return matcher !== undefined ? matcher.call(regexp, O) : new RegExp(regexp)[MATCH](String(O));
+    },
+    // `RegExp.prototype[@@match]` method
+    // https://tc39.github.io/ecma262/#sec-regexp.prototype-@@match
+    function (regexp) {
+      var res = maybeCallNative(nativeMatch, regexp, this);
+      if (res.done) return res.value;
+
+      var rx = anObject(regexp);
+      var S = String(this);
+
+      if (!rx.global) return regExpExec(rx, S);
+
+      var fullUnicode = rx.unicode;
+      rx.lastIndex = 0;
+      var A = [];
+      var n = 0;
+      var result;
+      while ((result = regExpExec(rx, S)) !== null) {
+        var matchStr = String(result[0]);
+        A[n] = matchStr;
+        if (matchStr === '') rx.lastIndex = advanceStringIndex(S, toLength(rx.lastIndex), fullUnicode);
+        n++;
+      }
+      return n === 0 ? null : A;
+    }
+  ];
+});
+
+
+/***/ }),
+
 /***/ "./node_modules/core-js/modules/web.dom-collections.for-each.js":
 /*!**********************************************************************!*\
   !*** ./node_modules/core-js/modules/web.dom-collections.for-each.js ***!
@@ -3571,6 +3924,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _modules_modals__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./modules/modals */ "./src/js/modules/modals.js");
 /* harmony import */ var _modules_sliders__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./modules/sliders */ "./src/js/modules/sliders.js");
 /* harmony import */ var _modules_forms__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./modules/forms */ "./src/js/modules/forms.js");
+/* harmony import */ var _modules_moreCards__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./modules/moreCards */ "./src/js/modules/moreCards.js");
+/* harmony import */ var _modules_calc__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./modules/calc */ "./src/js/modules/calc.js");
+/* harmony import */ var _modules_filter__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./modules/filter */ "./src/js/modules/filter.js");
+
+
+
 
 
 
@@ -3584,8 +3943,313 @@ window.addEventListener('DOMContentLoaded', function () {
 
   Object(_modules_sliders__WEBPACK_IMPORTED_MODULE_1__["default"])('.main-slider-item', 5000, '.feedback-slider-item', '.main-next-btn', '.main-prev-btn'); // функция для работы слайдеров
 
-  Object(_modules_forms__WEBPACK_IMPORTED_MODULE_2__["default"])();
+  Object(_modules_forms__WEBPACK_IMPORTED_MODULE_2__["default"])(); // функция для работы с формами
+
+  Object(_modules_moreCards__WEBPACK_IMPORTED_MODULE_3__["default"])('more-style', '.styles-2'); // функция для показа блока с карточками
+
+  Object(_modules_calc__WEBPACK_IMPORTED_MODULE_4__["default"])('size', 'material', 'options', '.promocode', '.calc-price', 'IWANTPOPART'); // функция для калькулятора
+
+  Object(_modules_filter__WEBPACK_IMPORTED_MODULE_5__["default"])('.tab-btn', '.portfolio-menu', '.portfolio-block', '.portfolio-no', 'active'); // функция для работы блока с фильтром
 });
+
+/***/ }),
+
+/***/ "./src/js/modules/calc.js":
+/*!********************************!*\
+  !*** ./src/js/modules/calc.js ***!
+  \********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+var calc = function calc(size, material, options, promo, price, priceCode) {
+  // функция для калькулятора. size - select размера картины, material - select материала, options - select доп. услуг, promo - инпут для промокода, price - окно для вывода итоговой цены, priceCode - промокод
+  var sizePic = document.getElementById(size),
+      // берем select размера картины
+  matPic = document.getElementById(material),
+      // берем select материала
+  optPic = document.getElementById(options),
+      // берем select доп. услуг
+  promocode = document.querySelector(promo),
+      // берем инпут для промокода
+  windowSumPrice = document.querySelector(price); // берем окно для показа итоговой цены
+
+  var sizeValue = 0,
+      matValue = 0,
+      optValue = 0; // переменные для значений value
+
+  sizePic.addEventListener('change', function () {
+    // навешиваем обработчик, срабатывающий при изменении, на select размера картины
+    sizeValue = this.value; // получаем выбранное значение
+
+    showPrice(); // запускаем функцию расчета и показа цены
+  });
+  matPic.addEventListener('change', function () {
+    // навешиваем обработчик, срабатывающий при изменении, на select материала картины
+    matValue = this.value; // получаем выбранное значение
+
+    showPrice(); // запускаем функцию расчета и показа цены
+  });
+  optPic.addEventListener('change', function () {
+    // навешиваем обработчик, срабатывающий при изменении, на select доп. услуг
+    optValue = this.value; // получаем выбранное значение
+
+    showPrice(); // запускаем функцию расчета и показа цены
+  });
+
+  function showPrice() {
+    // функция показа цены
+    if (sizeValue != 0 && matValue != 0) {
+      // показываем цену только если выбраны первые два селекта. По дефолту они равны 0 
+      var sum = +sizeValue * +matValue + +optValue; // расчет общей суммы
+
+      if (!promocode.value && sizeValue !== 0 && matValue !== 0) {
+        // если в поле промокода ничего нет и выбраны первые 2 селекта
+        windowSumPrice.textContent = "\u0426\u0435\u043D\u0430 \u0441\u043E\u0441\u0442\u0430\u0432\u043B\u044F\u0435\u0442 ".concat(sum, " \u0440\u0443\u0431\u043B\u0435\u0439"); // выводим цену на экран
+      }
+
+      promocode.addEventListener('input', function () {
+        // навешиваем обработчик на инпут промокода
+        if (promocode.value === priceCode && sizeValue !== 0 && matValue !== 0) {
+          // если введен нужный промокод и выбраны первые 2 селекта
+          sum = Math.floor(sum * 0.7); // уменьшаем цену на 30% и округляем до минимального целого
+
+          windowSumPrice.textContent = "\u0426\u0435\u043D\u0430 \u0441\u043E\u0441\u0442\u0430\u0432\u043B\u044F\u0435\u0442 ".concat(sum, " \u0440\u0443\u0431\u043B\u0435\u0439"); // выводим цену на экран
+        } else if (promocode.value !== priceCode && sizeValue !== 0 && matValue !== 0) {
+          // если введено что-либо отличное от промокода и выбраны первые 2 селекта
+          sum = +sizeValue * +matValue + +optValue; // расчет общей суммы
+
+          windowSumPrice.textContent = "\u0426\u0435\u043D\u0430 \u0441\u043E\u0441\u0442\u0430\u0432\u043B\u044F\u0435\u0442 ".concat(sum, " \u0440\u0443\u0431\u043B\u0435\u0439"); // выводим цену на экран
+        }
+      });
+    }
+  }
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (calc);
+
+/***/ }),
+
+/***/ "./src/js/modules/checkInputsNameAndComm.js":
+/*!**************************************************!*\
+  !*** ./src/js/modules/checkInputsNameAndComm.js ***!
+  \**************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var core_js_modules_es_array_slice__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core-js/modules/es.array.slice */ "./node_modules/core-js/modules/es.array.slice.js");
+/* harmony import */ var core_js_modules_es_array_slice__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_slice__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var core_js_modules_es_string_match__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! core-js/modules/es.string.match */ "./node_modules/core-js/modules/es.string.match.js");
+/* harmony import */ var core_js_modules_es_string_match__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_string_match__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! core-js/modules/web.dom-collections.for-each */ "./node_modules/core-js/modules/web.dom-collections.for-each.js");
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_2__);
+
+
+
+
+var checkInputsNameAndComm = function checkInputsNameAndComm(name, comm) {
+  // функция для валидации инпутов имени и комментариев. Ввод только на русском языке, можно вводить числа
+  var nameInputs = document.querySelectorAll(name),
+      // берем инпуты имени по переданному селектору
+  commInputs = document.querySelectorAll(comm),
+      // берем инпуты комментариев по переданному селектору
+  regExp = /[А-Яа-я0-9]/; // регулярное выражение, по которому будет определяться соответствие. Ввод только на русском языке, можно вводить числа
+
+  function validation(input) {
+    input.forEach(function (item) {
+      // перебираем все инпуты имени
+      item.addEventListener('input', function () {
+        // навешиваем на него обработчик ввода (срабатывае, когда начинаешь вводить) 
+        if (item.value[0]) {
+          // если введен первый символ в инпут, то
+          var firstFound = item.value[0].match(regExp); // проверяем соответствует ли введенный символ регулярному выражению. Метод match возвращает массив, где первый элемент - это совпадение. Если совпадений нет, то возвращает null
+
+          if (!firstFound) {
+            // если введенный символ не соответствует нужному, то
+            item.value = ''; // меняем введенный символ на пустую строку
+          }
+        }
+
+        if (item.value[0] && item.value[1]) {
+          // если введен первый и последующие символы
+          for (var i = 1; i < item.value.length; i++) {
+            // перебираем все символы инпута, максимальное значение i - количество введенных на данный момент символов
+            var found = item.value[i].match(regExp); // проверям каждый символ на соответствие регулярному выражению
+
+            if (!found) {
+              // если не соответсвует, то
+              item.value = item.value.slice(0, i); // задаем значение инпута - то, что уже ввели минус текущий (последний) символ
+            }
+          }
+        }
+      });
+    });
+  }
+
+  validation(nameInputs); // запускаем функцию для инпутов имени
+
+  validation(commInputs); // запускаем функцию для инпутов комментария
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (checkInputsNameAndComm);
+
+/***/ }),
+
+/***/ "./src/js/modules/checkInputsPhone.js":
+/*!********************************************!*\
+  !*** ./src/js/modules/checkInputsPhone.js ***!
+  \********************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var core_js_modules_es_array_slice__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core-js/modules/es.array.slice */ "./node_modules/core-js/modules/es.array.slice.js");
+/* harmony import */ var core_js_modules_es_array_slice__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_slice__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var core_js_modules_es_string_match__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! core-js/modules/es.string.match */ "./node_modules/core-js/modules/es.string.match.js");
+/* harmony import */ var core_js_modules_es_string_match__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_string_match__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! core-js/modules/web.dom-collections.for-each */ "./node_modules/core-js/modules/web.dom-collections.for-each.js");
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_2__);
+
+
+
+
+var checkInputsPhone = function checkInputsPhone(selector) {
+  // функция для валидации номера телефона. При вводе добавляется +, ввести можно не более 12 символов с учетом +, добавляется красная рамка
+  var numInputs = document.querySelectorAll(selector); // берем инпуты по переданному селектору
+
+  numInputs.forEach(function (item) {
+    // перебираем все инпуты
+    item.addEventListener('input', function () {
+      // навешиваем на него обработчик ввода (срабатывае, когда начинаешь вводить) 
+      var firstNum = /\+/,
+          // регулярное выражение для + в начале инпута
+      num = /[0-9]/,
+          // регулярное выражение для каждого следующего символа после +
+      allNum = /\+?[0-9]{11}/; // регулярное выражение для всего инпута
+
+      item.setAttribute('maxlength', 12); // добавляем инпуту атрибут максимальной длины в 12 символов (+ и 11 цифр)
+
+      item.setAttribute('minlength', 12); // добавляем инпуту атрибут минимальной длины в 12 символов (+ и 11 цифр)
+
+      if (item.value[0]) {
+        // если введен первый символ в инпут, то
+        var firstNumFound = item.value[0].match(firstNum); // проверяем соответствует ли введенный символ первому регулярному выражению. Метод match возвращает массив, где первый элемент - это совпадение. Если совпадений нет, то возвращает null
+
+        if (!firstNumFound) {
+          // если введенный символ не соответствует нужному (+), то
+          item.value = '+'; // меняем введенный символ на +
+        }
+      }
+
+      if (item.value[0] && item.value[1]) {
+        // если введен первый символ и второй, то
+        for (var i = 1; i < item.value.length; i++) {
+          // перебираем все символы инпута, максимальное значение i - количество введенных на данный момент символов
+          var numFound = item.value[i].match(num); // проверям каждый символ на соответствие второму регулярному выражению
+
+          if (!numFound) {
+            // если не соответсвует, то
+            item.value = item.value.slice(0, i); // задаем значение инпута - то, что уже ввели минус текущий (последний) символ
+          }
+        }
+
+        var allNumFound = item.value.match(allNum); // проверяем весь инпут на соответсвие третьему регулярному выражению
+
+        if (!allNumFound) {
+          // если не соответствует, то
+          item.style.border = '1px double red'; // включаем красную рамку
+        } else {
+          // если соответствует, то
+          item.style.border = 'none'; // убираем рамку
+        }
+      }
+    });
+  });
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (checkInputsPhone);
+
+/***/ }),
+
+/***/ "./src/js/modules/filter.js":
+/*!**********************************!*\
+  !*** ./src/js/modules/filter.js ***!
+  \**********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core-js/modules/web.dom-collections.for-each */ "./node_modules/core-js/modules/web.dom-collections.for-each.js");
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0__);
+
+
+var filter = function filter(tabBtn, tabHeader, tabContent, portfolio, active) {
+  // функция для блока с фильтром. tabBtn - кнопки фильтра (табы), tabHeader - блок в котором находятся кнопки, нужен для клика не только в саму кнопку, но и в область рядом, tabContent - контент, portfolio - элемент, выводимый при отсутствии контента, active - класс активности кнопки
+  var btn = document.querySelectorAll(tabBtn),
+      // получаем все кнопки табов
+  header = document.querySelector(tabHeader),
+      // получаем блок, в котором находятся кнопки
+  content = document.querySelectorAll(tabContent),
+      // получаем весь контент
+  noPortfolio = document.querySelector(portfolio); // получаем блок, выводимый при отсутствии контента
+
+  function hide() {
+    // функция скрытия всего контента
+    btn.forEach(function (item) {
+      // перебираем все табы
+      item.classList.remove(active); // убираем класс активности со всех табов
+    });
+    content.forEach(function (item) {
+      // перебираем весь контент
+      item.style.display = 'none'; // скрываем каждый элемент
+    });
+    noPortfolio.style.display = 'none'; // скрываем элемент, выводимый при отсутствии контента
+  }
+
+  header.addEventListener('click', function (e) {
+    // навешиваем обработчик клика на элемент со всеми кнопками
+    var target = e.target; // элемент в который кликнули
+
+    btn.forEach(function (item, i) {
+      // перебираем все кнопки с получением ее индекса
+      if (target == item) {
+        // если клик был в текущую перебираемую кнопку
+        hide(); // скрываем весь контент и класс активности кнопки
+
+        btn[i].classList.add(active); // добавляем класс активности текущей кнопке
+
+        var contentArr = []; // создаем пустой массив для определения того, найден ли контент по текущему табу. В него будет добавляться весь найденный контент. Если массив пустой - значит контента нет и выводится соответствующий блок
+
+        content.forEach(function (pic) {
+          // перебираем контент
+          if (pic.classList[2] === target.classList[1]) {
+            // если класс перебираемого контента равен классу нажатой кнопки, то
+            contentArr.push(pic); // добавляем найденый контент в массив
+
+            pic.style.display = 'block'; // показываем этот контент
+          } else if (pic.classList[1] === target.classList[1]) {
+            // иначе если выбран весь контент (этот класс содержит каждый элемент, поэтому индекс 1)
+            contentArr.push(pic); // добавляем найденый контент в массив
+
+            pic.style.display = 'block'; // показываем этот контент
+          }
+        });
+
+        if (contentArr.length == 0) {
+          // если после перебора всего контента массив оказался пустой, то
+          noPortfolio.style.display = 'block'; // выводим блок об отсутствии портфолио
+        }
+      }
+    });
+  });
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (filter);
 
 /***/ }),
 
@@ -3608,43 +4272,39 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var regenerator_runtime_runtime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! regenerator-runtime/runtime */ "./node_modules/regenerator-runtime/runtime.js");
 /* harmony import */ var regenerator_runtime_runtime__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(regenerator_runtime_runtime__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _checkInputsPhone__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./checkInputsPhone */ "./src/js/modules/checkInputsPhone.js");
+/* harmony import */ var _checkInputsNameAndComm__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./checkInputsNameAndComm */ "./src/js/modules/checkInputsNameAndComm.js");
 
 
 
 
 
+ // импортируем файл с функцией валидации инпута для номера телефона
+
+ // импортируем файл с функцией валидации инпута для имени и комментария
 
 var forms = function forms() {
   // функция для работы с формами
   var form = document.querySelectorAll('form'),
       // берем все формы
-  inputs = document.querySelectorAll('input'); // берем все инпуты
-
+  inputs = document.querySelectorAll('input'),
+      // берем все инпуты
+  textarea = document.querySelectorAll('textarea'),
+      // берем все области для ввода текста
+  content = document.querySelectorAll('.popup-content');
   var message = {
     // объект с сообщениями пользователю
     loadingSpinner: 'assets/img/spinner/Spinner-1s-150px.svg',
     // спиннер
+    checkMark: 'assets/img/modalMessage/check-mark.svg',
+    // иконка успешной отправки
     loading: 'Загрузка...',
     success: 'Спасибо! скоро мы с вами свяжемся',
     failure: 'Что-то пошло не так...'
   };
-  var statusMessageSpnr = document.createElement('img'),
-      // создаем новый элемент на странице для показа его пользователю в котором будет спиннер
-  statusMessageText = document.createElement('div'); // создаем новый элемент на странице для показа его пользователю в котором будет div с текстом
+  Object(_checkInputsPhone__WEBPACK_IMPORTED_MODULE_5__["default"])('input[name="phone"]'); // разрешаем вводить в инпут номера телефона нужные значения
 
-  statusMessageSpnr.src = message.loadingSpinner; // добавляем новому элементу атрибут src
-
-  statusMessageSpnr.style.cssText = "\n            display: block;\n            margin: 0 auto;\n          "; // добавили стили картинке, чтобы встала по центру
-
-  statusMessageText.textContent = message.loading; // добавили в новый div сообщение с текстом
-
-  function formAppend() {
-    form.forEach(function (item) {
-      item.append(statusMessageSpnr); // добавляем сообщение на страницу после формы
-
-      item.append(statusMessageText); // добавляем сообщение на страницу после формы
-    });
-  }
+  Object(_checkInputsNameAndComm__WEBPACK_IMPORTED_MODULE_6__["default"])('input[name="name"]', '[name="message"]'); // разрешаем вводить в инпуты имени и комментария нужные значения
 
   var postData = function postData(url, data) {
     var res;
@@ -3652,9 +4312,7 @@ var forms = function forms() {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
-            // функция отправки на сервер
-            formAppend();
-            _context.next = 3;
+            _context.next = 2;
             return regeneratorRuntime.awrap(fetch(url, {
               // отправялем запрос на сервер
               method: 'POST',
@@ -3663,15 +4321,15 @@ var forms = function forms() {
 
             }));
 
-          case 3:
+          case 2:
             res = _context.sent;
-            _context.next = 6;
+            _context.next = 5;
             return regeneratorRuntime.awrap(res.text());
 
-          case 6:
+          case 5:
             return _context.abrupt("return", _context.sent);
 
-          case 7:
+          case 6:
           case "end":
             return _context.stop();
         }
@@ -3685,25 +4343,120 @@ var forms = function forms() {
       // берем каждый инпут
       item.value = ''; // задаем ему пустую строку
     });
+    textarea.forEach(function (item) {
+      // берем каждую область для ввода текста
+      item.value = ''; // задаем ей пустую строку
+    });
   };
 
-  function success() {
-    // функция удаления контента из модального окна и показа сообщения
-    var content = document.querySelectorAll('popup-content'); // берем контент всех форм
+  function clearModal() {
+    // функция удаления контента из модального окна
+    content.forEach(function (item) {
+      // т.к. получили контент с 2 форм, то перебираем каждую               
+      for (var i = item.children.length - 1; i > 0; i--) {
+        // i - количество элементов в блоке (-1 чтобы взять индекс), пока i не равно первому элементу
+        item.children[i].style.display = 'none'; // скрываем все элементы
+      }
+    });
+  }
 
+  function showModal() {
+    // функция показа контента в модальном окне после того как оно было скрыто
+    content.forEach(function (item) {
+      // т.к. получили контент с 2 форм, то перебираем каждую               
+      for (var i = item.children.length - 1; i > 0; i--) {
+        // i - количество элементов в блоке (-1 чтобы взять индекс), пока i не равно первому элементу
+        item.children[i].style.display = 'block'; // показываем все элементы
+      }
+    });
+  }
+
+  function loadingModal() {
+    // функция показа сообщения отправки
     content.forEach(function (item) {
       // т.к. получили контент с 2 форм, то перебираем каждую
-      item.lastChild.remove(); // удаляем последний элемент, это форма                         
+      var statusMessageSpnr = document.createElement('img'),
+          // создаем новый элемент на странице для показа его пользователю в котором будет спиннер
+      statusMessageText = document.createElement('div'); // создаем новый элемент на странице для показа его пользователю в котором будет div с текстом
 
-      if (item.lastChild.classList.contains('popup-close')) {// если следующий последний элемент кнопка закрытия окна, то
-      } else {
-        item.lastChild.remove(); // удаляем последний элемент, заголовок h4 в одной из форм
-      }
+      statusMessageSpnr.src = message.loadingSpinner; // добавляем новому элементу атрибут src
 
-      statusMessageText.textContent = message.success; // добавили в div сообщение с текстом успешной отправки
+      statusMessageSpnr.style.cssText = "\n                display: block;\n                margin: 0 auto;\n            "; // добавили стили картинке, чтобы встала по центру
 
-      content.append(statusMessageText); // добавляем сообщение на страницу после формы
+      statusMessageText.textContent = message.loading; // добавили в новый div сообщение с текстом
+
+      statusMessageSpnr.classList.add('spinner-new'); // добавляем класс спиннеру, чтобы потом его удалить
+
+      statusMessageText.classList.add('modal-text-new'); // добавляем класс элементу с текстом, чтобы потом его удалить
+
+      item.append(statusMessageSpnr); // добавляем спиннер в модальное окно
+
+      item.append(statusMessageText); // добавляем текст в модальное окно
     });
+  }
+
+  function deleteLoading() {
+    // функция удаления сообщения о загрузке
+    var spinner = document.querySelectorAll('.spinner-new'),
+        // берем все спиннеры, их много, т.к. создавались под каждую форму
+    messageLoading = document.querySelectorAll('.modal-text-new'); // берем все текстовые сообщения, их много, т.к. создавались под каждую форму
+
+    spinner.forEach(function (item) {
+      // перебираем все спиннеры
+      item.remove(); // удаляем спиннеры
+    });
+    messageLoading.forEach(function (item) {
+      // перебираем все текстовые сообщения
+      item.remove(); // удаляем текстовые сообщения
+    });
+  }
+
+  function success() {
+    // функция показа сообщения об успешной отправке
+    content.forEach(function (item) {
+      // т.к. получили контент с 2 форм, то перебираем каждую
+      var successMessageCheck = document.createElement('img'),
+          // создаем новый элемент на странице для показа его пользователю в котором будет иконка
+      successMessageText = document.createElement('div'); // создаем новый элемент на странице для показа его пользователю в котором будет div с текстом
+
+      successMessageCheck.src = message.checkMark; // добавляем новому элементу атрибут src
+
+      successMessageCheck.style.cssText = "\n                display: block;\n                margin: 0 auto;\n            "; // добавили стили картинке, чтобы встала по центру
+
+      successMessageText.textContent = message.success; // добавили в новый div сообщение с текстом
+
+      item.append(successMessageCheck); // добавляем иконку в модальное окно
+
+      item.append(successMessageText); // добавляем текст в модальное окно
+
+      setTimeout(function () {
+        successMessageCheck.remove(); // удаляем сообщение
+
+        successMessageText.remove(); // удаляем сообщение
+      }, 3000); // через 3 сек
+    });
+    setTimeout(function () {
+      showModal(); // возвращаем контент модального окна
+    }, 3001); // через 3,001 сек   
+  }
+
+  function fail() {
+    // функция показа сообщения при ошибке отправки
+    content.forEach(function (item) {
+      // т.к. получили контент с 2 форм, то перебираем каждую
+      var failMessageText = document.createElement('div'); // создаем новый элемент на странице для показа его пользователю в котором будет div с текстом
+
+      failMessageText.textContent = message.failure; // добавили в новый div сообщение с текстом
+
+      item.append(failMessageText); // добавляем текст в модальное окно
+
+      setTimeout(function () {
+        failMessageText.remove(); // удаляем сообщение
+      }, 3000); // через 3 сек
+    });
+    setTimeout(function () {
+      showModal(); // возвращаем контент модального окна
+    }, 3001);
   }
 
   form.forEach(function (item) {
@@ -3712,19 +4465,28 @@ var forms = function forms() {
       // навешиваем на каждую форму обработчик срабатывающий при подтверждении формы
       e.preventDefault(); // отменяем стандартное поведение браузера (перезагрузку страницы)
 
+      clearModal(); // очищаем модальное окно
+
+      loadingModal(); // показываем сообщение об отправке
+
       var formData = new FormData(item); // создаем переменную по классу FormData. Этот класс собирает данные, которые отправить надо. У инпутов в формах должен быть обязательно быть атрибут "name", без него работать не будет
 
       postData('assets/server.php', formData) // отправляем запрос      
       .then(function (res) {
-        console.log(res);
-        success(); // выводим сообщение об успешной отправке
-      }).catch() // при ошибке выводим сообщение об ошибке
+        console.log(res); // выводим в консоль инфу с формы
+
+        deleteLoading(); // очищаем модальное окно
+
+        success();
+      }).catch(function (err) {
+        console.log(err);
+        deleteLoading(); // очищаем модальное окно
+
+        fail(); // выводим сообщение об ошибке 
+      }) // при ошибке выводим сообщение об ошибке
       .finally(function () {
         // выполняется в любом случае
         clearInputs(); // очищаем поля формы
-        // setTimeout(() => {
-        //     statusMessage.remove();                                     // удаляем сообщение
-        // }, 5000);                                                       // через 5 сек
       });
     });
   });
@@ -3939,6 +4701,41 @@ var modals = function modals() {
 };
 
 /* harmony default export */ __webpack_exports__["default"] = (modals);
+
+/***/ }),
+
+/***/ "./src/js/modules/moreCards.js":
+/*!*************************************!*\
+  !*** ./src/js/modules/moreCards.js ***!
+  \*************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core-js/modules/web.dom-collections.for-each */ "./node_modules/core-js/modules/web.dom-collections.for-each.js");
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0__);
+
+
+var moreCards = function moreCards(btnSelector, cardSelector) {
+  // функция для подгрузки карточек
+  var btn = document.getElementById(btnSelector),
+      // берем кнопку, при нажатии которой будут появляться элементы
+  cards = document.querySelectorAll(cardSelector); // берем карточки, которые в данный момент скрыты
+
+  btn.addEventListener('click', function () {
+    // навешиваем обработчик клика на кнопку
+    cards.forEach(function (item) {
+      // перебираем все карточки
+      item.classList.remove('hidden-lg', 'hidden-md', 'hidden-sm', 'hidden-xs'); // убираем классы скрытия
+
+      item.classList.add('col-sm-3', 'col-sm-offset-0', 'col-xs-10', 'col-xs-offset-1', 'animated', 'fadeInUp'); // добавляем классы отображения
+    });
+    btn.style.display = 'none'; // скрываем кнопку
+  });
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (moreCards);
 
 /***/ }),
 

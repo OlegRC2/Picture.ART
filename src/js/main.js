@@ -3,6 +3,7 @@ import sliders from './modules/sliders';
 import forms from './modules/forms';
 import moreCards from './modules/moreCards';
 import calc from './modules/calc';
+import filter from './modules/filter';
 
 
 
@@ -17,6 +18,7 @@ window.addEventListener('DOMContentLoaded', () => {                             
     forms();                                                                    // функция для работы с формами
     moreCards('more-style', '.styles-2');                                       // функция для показа блока с карточками
     calc('size', 'material', 'options', '.promocode', '.calc-price', 'IWANTPOPART');    // функция для калькулятора
+    filter('.tab-btn', '.portfolio-menu', '.portfolio-block', '.portfolio-no', 'active');    // функция для работы блока с фильтром
 
     
 
