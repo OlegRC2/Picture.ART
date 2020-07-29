@@ -4,6 +4,7 @@ import forms from './modules/forms';
 import moreCards from './modules/moreCards';
 import calc from './modules/calc';
 import filter from './modules/filter';
+import sizes from './modules/sizesBlock';
 
 
 
@@ -19,6 +20,7 @@ window.addEventListener('DOMContentLoaded', () => {                             
     moreCards('more-style', '.styles-2');                                       // функция для показа блока с карточками
     calc('size', 'material', 'options', '.promocode', '.calc-price', 'IWANTPOPART');    // функция для калькулятора
     filter('.tab-btn', '.portfolio-menu', '.portfolio-block', '.portfolio-no', 'active');    // функция для работы блока с фильтром
+    sizes('.sizes-block', '.sizes-hit');
 
     
 
