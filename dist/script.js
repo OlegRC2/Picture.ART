@@ -4409,6 +4409,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _modules_showMoreStyles__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./modules/showMoreStyles */ "./src/js/modules/showMoreStyles.js");
 /* harmony import */ var _modules_calc__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./modules/calc */ "./src/js/modules/calc.js");
 /* harmony import */ var _modules_filter__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./modules/filter */ "./src/js/modules/filter.js");
+/* harmony import */ var _modules_pictureSize__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./modules/pictureSize */ "./src/js/modules/pictureSize.js");
+
 
 
 
@@ -4440,6 +4442,8 @@ window.addEventListener('DOMContentLoaded', function () {
   Object(_modules_calc__WEBPACK_IMPORTED_MODULE_6__["default"])('#size', '#material', '#options', '.promocode', '.calc-price'); // функция для работы калькулятора
 
   Object(_modules_filter__WEBPACK_IMPORTED_MODULE_7__["default"])(); // функция для работы фильтра
+
+  Object(_modules_pictureSize__WEBPACK_IMPORTED_MODULE_8__["default"])('.sizes-block'); // функция для работы блока с размерами картин
 });
 
 /***/ }),
@@ -5085,6 +5089,69 @@ var modals = function modals() {
 };
 
 /* harmony default export */ __webpack_exports__["default"] = (modals);
+
+/***/ }),
+
+/***/ "./src/js/modules/pictureSize.js":
+/*!***************************************!*\
+  !*** ./src/js/modules/pictureSize.js ***!
+  \***************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var core_js_modules_es_array_slice__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core-js/modules/es.array.slice */ "./node_modules/core-js/modules/es.array.slice.js");
+/* harmony import */ var core_js_modules_es_array_slice__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_slice__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! core-js/modules/web.dom-collections.for-each */ "./node_modules/core-js/modules/web.dom-collections.for-each.js");
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_1__);
+
+
+
+var pictureSize = function pictureSize(imgSelector) {
+  // функция работы блока с наведением мыши на картины. imgSelector - сами блоки
+  var blocks = document.querySelectorAll(imgSelector); // берем все блоки 
+
+  function showImg(block) {
+    // функция показа картинки при наведении
+    var img = block.querySelector('img'); // берем картинку внутри блока по тегу
+    // something.png => something-1.png
+
+    img.src = img.src.slice(0, -4) + '-1.png'; // методом slice вырезаем кусок строки, берем начало (0) и отрезаем 4 символа с конца (-4). Затем добавляем постфикс и задаем его в src
+
+    block.querySelectorAll('p:not(.sizes-hit)').forEach(function (p) {
+      // берем все параграфы и перебираем их. :not(.sizes-hit) - возмет все, кроме класса в скобках
+      p.style.display = 'none'; // скрываем эти элементы
+    });
+  }
+
+  function hideImg(block) {
+    // функция скрытия картинки при наведении
+    var img = block.querySelector('img'); // берем картинку внутри блока по тегу
+    // something-1.png => something.png
+
+    img.src = img.src.slice(0, -6) + '.png'; // методом slice вырезаем кусок строки, берем начало (0) и отрезаем 6 символов с конца (-6).
+
+    block.querySelectorAll('p:not(.sizes-hit)').forEach(function (p) {
+      // берем все параграфы и перебираем их. :not(.sizes-hit) - возмет все, кроме класса в скобках
+      p.style.display = 'block'; // показываем эти элементы
+    });
+  }
+
+  blocks.forEach(function (block) {
+    // перебираем все блоки
+    block.addEventListener('mouseover', function () {
+      // навешиваем обработчик наведения мыши на каждый блок
+      showImg(block); // вызываем функцию показа картинки
+    });
+    block.addEventListener('mouseout', function () {
+      // навешиваем обработчик отведения мыши с блока
+      hideImg(block); // вызываем функцию скрытия картинки
+    });
+  });
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (pictureSize);
 
 /***/ }),
 
