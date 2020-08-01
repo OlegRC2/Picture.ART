@@ -4066,6 +4066,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _modules_calc__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./modules/calc */ "./src/js/modules/calc.js");
 /* harmony import */ var _modules_filter__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./modules/filter */ "./src/js/modules/filter.js");
 /* harmony import */ var _modules_sizesBlock__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./modules/sizesBlock */ "./src/js/modules/sizesBlock.js");
+/* harmony import */ var _modules_accordeon__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./modules/accordeon */ "./src/js/modules/accordeon.js");
+
 
 
 
@@ -4091,8 +4093,98 @@ window.addEventListener('DOMContentLoaded', function () {
 
   Object(_modules_filter__WEBPACK_IMPORTED_MODULE_5__["default"])('.tab-btn', '.portfolio-menu', '.portfolio-block', '.portfolio-no', 'active'); // функция для работы блока с фильтром
 
-  Object(_modules_sizesBlock__WEBPACK_IMPORTED_MODULE_6__["default"])('.sizes-block', '.sizes-hit');
+  Object(_modules_sizesBlock__WEBPACK_IMPORTED_MODULE_6__["default"])('.sizes-block', '.sizes-hit'); // функция для работы блока с размером картин
+
+  Object(_modules_accordeon__WEBPACK_IMPORTED_MODULE_7__["default"])('.accordion-heading', '.accordion-block'); // функция для работы аккордеона
 });
+
+/***/ }),
+
+/***/ "./src/js/modules/accordeon.js":
+/*!*************************************!*\
+  !*** ./src/js/modules/accordeon.js ***!
+  \*************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core-js/modules/web.dom-collections.for-each */ "./node_modules/core-js/modules/web.dom-collections.for-each.js");
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0__);
+
+
+var accordeon = function accordeon(head, textBlock) {
+  // функция для работы аккордеона. head - заголовки по которым кликают, textBlock - появляющийся текст
+  var header = document.querySelectorAll(head),
+      // берем заголовки вкладок
+  text = document.querySelectorAll(textBlock); // текстовые блоки
+
+  text.forEach(function (item) {
+    // перебираем все тексовые блоки 
+    item.classList.add('animated'); // добавляем класс анимации, чтобы потом его постоянно не добавлять
+
+    item.style.display = 'none'; // скрываем все текстовые блоки, т.к. по дефолту они показаны
+  });
+
+  function closeText() {
+    // функция скрытия всех текстовых блоков
+    text.forEach(function (p) {
+      // перебираем все текстовые блоки
+      if (p.classList.contains('fadeInDown')) {
+        // если у блока уже есть класс анимации открытия, т.е. текстовый блок показан
+        p.classList.remove('fadeInDown'); // удаляем класс анимации открытия с блока
+
+        p.classList.add('fadeOutUp'); // добавляем класс анимации закрытия
+
+        setTimeout(function () {
+          // скрываем блок через 400 мс, время на глаз взято
+          p.style.display = 'none';
+          p.classList.remove('fadeOutUp'); // при скрытии блока так же удаляем класс анимации закрытия
+        }, 400);
+      }
+    });
+  }
+
+  header.forEach(function (item, i) {
+    // перебираем все заголовки, получаем сам заголовок и его индекс
+    item.addEventListener('click', function () {
+      // навешиваем обработчик клика на каждый заголовок                                   
+      header.forEach(function (head) {
+        // перебираем все заголовки
+        head.querySelector('span').style.cssText = "                                \n                    border-bottom: 2px dotted #333;\n                    color: #333;\n                "; // меняем стиль заголовка на "закрытый"
+      });
+      closeText(); // запускаем функцию закрытия всех текстовых блоков
+
+      if (item.classList.contains('accActive')) {
+        // если заголовок содержит класс активности
+        header.forEach(function (head) {
+          // перебираем все заголовки
+          head.querySelector('span').style.cssText = "                                      \n                        border-bottom: 2px dotted #333;\n                        color: #333;\n                    "; // меняем стиль заголовка на "закрытый"
+
+          head.classList.remove('accActive'); // удаляем класс активности
+        });
+        closeText(); // запускаем функцию закрытия всех текстовых блоков
+      } else {
+        // если заголовок не содержит класса активности
+        item.querySelector('span').style.cssText = "                                    \n                    border-bottom: none;\n                    color: #c51abb;\n                "; // добавляем заголовку стиль активности
+
+        text[i].classList.add('fadeInDown'); // берем текстовый блок соответствующий индексу заголовка и добавляем ему класс анимации открытия
+
+        setTimeout(function () {
+          // через 400 мс, время на глаз взято
+          text[i].style.display = 'block'; // показываем этот текстовый блок
+        }, 400);
+        header.forEach(function (head) {
+          // перебираем все заголовки
+          head.classList.remove('accActive'); // удаляем класс активности
+        });
+        item.classList.add('accActive'); // добавляем текущему заголовку класс активности
+      }
+    });
+  });
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (accordeon);
 
 /***/ }),
 
