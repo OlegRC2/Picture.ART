@@ -4410,6 +4410,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _modules_calc__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./modules/calc */ "./src/js/modules/calc.js");
 /* harmony import */ var _modules_filter__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./modules/filter */ "./src/js/modules/filter.js");
 /* harmony import */ var _modules_pictureSize__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./modules/pictureSize */ "./src/js/modules/pictureSize.js");
+/* harmony import */ var _modules_accordion__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./modules/accordion */ "./src/js/modules/accordion.js");
+
 
 
 
@@ -4444,7 +4446,64 @@ window.addEventListener('DOMContentLoaded', function () {
   Object(_modules_filter__WEBPACK_IMPORTED_MODULE_7__["default"])(); // функция для работы фильтра
 
   Object(_modules_pictureSize__WEBPACK_IMPORTED_MODULE_8__["default"])('.sizes-block'); // функция для работы блока с размерами картин
+
+  Object(_modules_accordion__WEBPACK_IMPORTED_MODULE_9__["default"])('.accordion-heading', '.accordion-block'); // функция для работы аккордеона
 });
+
+/***/ }),
+
+/***/ "./src/js/modules/accordion.js":
+/*!*************************************!*\
+  !*** ./src/js/modules/accordion.js ***!
+  \*************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core-js/modules/web.dom-collections.for-each */ "./node_modules/core-js/modules/web.dom-collections.for-each.js");
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_0__);
+
+
+var accordion = function accordion(triggersSelector, itemsSelector) {
+  // функция работы аккордеона
+  var btns = document.querySelectorAll(triggersSelector); // получаем кнопки
+  // blocks = document.querySelectorAll(itemsSelector);                                        // получаем текстовые блоки
+  // ПЕРВЫЙ ВАРИАНТ АККОРДЕОНА (работает совместно с css стилями)
+  // blocks.forEach(block => {                                                                       // перебираем все текстовые блоки
+  //     block.classList.add('animated', 'fadeInDown');                                              // добавялем классы анимации блокам
+  // });
+  // btns.forEach(btn => {                                                                           // перебираем все кнопки
+  //     btn.addEventListener('click', function() {                                                  // навешиваем обработчик клика на каждую кнопку и используем обычную функцию для работы контекста вызова this 
+  //         if (!this.classList.contains('active')) {                                               // если текущий элемент btn не содержит класс active, то 
+  //             btns.forEach(btn => {                                                               // перебираем все кнопки
+  //                btn.classList.remove('active', 'active-style');                                  // удаляем класс активности с кнопки и класс стиля
+  //             });
+  //             this.classList.add('active', 'active-style');                                       // добавляем текущей кнопке класс активности и класс стиля                            
+  //         }
+  //     });
+  // });
+
+  btns.forEach(function (btn) {
+    // перебираем все кнопки
+    btn.addEventListener('click', function () {
+      // навешиваем обработчик клика на каждую кнопку и используем обычную функцию для работы контекста вызова this 
+      this.classList.toggle('active-style'); // если у элемента нет класса, то toggle его добавит, если есть, то удалит
+
+      this.nextElementSibling.classList.toggle('active-content'); // обращаемся к следующему после кнопки элементу и тоглим класс активности
+
+      if (this.classList.contains('active-style')) {
+        // если кнопка содержит класс активности, то
+        this.nextElementSibling.style.maxHeight = this.nextElementSibling.scrollHeight + 80 + 'px'; // следующему элементу после кнопки назначаем максимальную высоту равной его высоте + 80 (паддинги) и преобразуем все в строку (px)
+      } else {
+        // если у кнопки нет класса активности, то
+        this.nextElementSibling.style.maxHeight = '0px'; // скрываем элемент, задавая нулевую высоту
+      }
+    });
+  });
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (accordion);
 
 /***/ }),
 
