@@ -8,6 +8,7 @@ import calc from './modules/calc';
 import filter from './modules/filter';
 import pictureSize from './modules/pictureSize';
 import accordion from './modules/accordion';
+import burger from './modules/burger';
 
 
 
@@ -27,6 +28,8 @@ window.addEventListener('DOMContentLoaded', () => {                             
     filter();                                                                   // функция для работы фильтра
     pictureSize('.sizes-block');                                                // функция для работы блока с размерами картин
     accordion('.accordion-heading', '.accordion-block');                        // функция для работы аккордеона
+    burger('.burger-menu', '.burger');                                          // функция для работы бургер меню
+
     
 
 
