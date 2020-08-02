@@ -4067,6 +4067,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _modules_filter__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./modules/filter */ "./src/js/modules/filter.js");
 /* harmony import */ var _modules_sizesBlock__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./modules/sizesBlock */ "./src/js/modules/sizesBlock.js");
 /* harmony import */ var _modules_accordeon__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./modules/accordeon */ "./src/js/modules/accordeon.js");
+/* harmony import */ var _modules_menuBurger__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./modules/menuBurger */ "./src/js/modules/menuBurger.js");
+
 
 
 
@@ -4096,6 +4098,8 @@ window.addEventListener('DOMContentLoaded', function () {
   Object(_modules_sizesBlock__WEBPACK_IMPORTED_MODULE_6__["default"])('.sizes-block', '.sizes-hit'); // функция для работы блока с размером картин
 
   Object(_modules_accordeon__WEBPACK_IMPORTED_MODULE_7__["default"])('.accordion-heading', '.accordion-block'); // функция для работы аккордеона
+
+  Object(_modules_menuBurger__WEBPACK_IMPORTED_MODULE_8__["default"])('.burger', '.burger-menu'); // функция для работы бургер-меню
 });
 
 /***/ }),
@@ -4727,6 +4731,69 @@ var forms = function forms() {
 };
 
 /* harmony default export */ __webpack_exports__["default"] = (forms);
+
+/***/ }),
+
+/***/ "./src/js/modules/menuBurger.js":
+/*!**************************************!*\
+  !*** ./src/js/modules/menuBurger.js ***!
+  \**************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+var menuBurger = function menuBurger(burgerBtn, burgerMenu) {
+  // функция для работы бургер меню. burgerBtn - кнопка вызова меню, burgerMenu - само меню
+  var btn = document.querySelector(burgerBtn),
+      // получаем кнопку
+  menu = document.querySelector(burgerMenu); // получаем меню
+
+  menu.classList.add('animated'); // добавляем класс анимации
+
+  btn.addEventListener('click', function () {
+    // навешиваем обработчик клика на кнопку
+    if (document.documentElement.clientWidth <= 992) {
+      showHideMenu();
+    }
+  });
+  window.addEventListener('resize', function () {
+    if (document.documentElement.clientWidth > 992) {
+      menu.classList.remove('fadeInDown'); // удаляем класс анимации появления
+
+      menu.classList.add('fadeOutUp'); // добавляем класс анимации закрытия
+
+      setTimeout(function () {
+        // ставим свойство display меню в none через 0,5 сек
+        menu.style.display = 'none';
+      }, 500);
+    }
+  });
+
+  function showHideMenu() {
+    // функция показа меню
+    if (menu.style.display == 'none' || menu.style.display == '') {
+      // если css свойство display меню равно none или пустой строке, т.е. меню в данный момент не показано, то
+      menu.classList.remove('fadeOutUp'); // удаляем класс анимации закрытия
+
+      menu.classList.add('fadeInDown'); // добавляем класс анимации появления
+
+      menu.style.display = 'block'; // показываем меню
+    } else {
+      // если меню в данный момент показано
+      menu.classList.remove('fadeInDown'); // удаляем класс анимации появления
+
+      menu.classList.add('fadeOutUp'); // добавляем класс анимации закрытия
+
+      setTimeout(function () {
+        // ставим свойство display меню в none через 0,5 сек
+        menu.style.display = 'none';
+      }, 500);
+    }
+  }
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (menuBurger);
 
 /***/ }),
 

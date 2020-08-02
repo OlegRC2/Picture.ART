@@ -6,6 +6,7 @@ import calc from './modules/calc';
 import filter from './modules/filter';
 import sizes from './modules/sizesBlock';
 import accordeon from './modules/accordeon';
+import menuBurger from './modules/menuBurger';
 
 
 
@@ -23,6 +24,7 @@ window.addEventListener('DOMContentLoaded', () => {                             
     filter('.tab-btn', '.portfolio-menu', '.portfolio-block', '.portfolio-no', 'active');    // функция для работы блока с фильтром
     sizes('.sizes-block', '.sizes-hit');                                        // функция для работы блока с размером картин
     accordeon('.accordion-heading', '.accordion-block');                        // функция для работы аккордеона
+    menuBurger('.burger', '.burger-menu');                                      // функция для работы бургер-меню
 
     
 
