@@ -4413,6 +4413,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _modules_accordion__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./modules/accordion */ "./src/js/modules/accordion.js");
 /* harmony import */ var _modules_burger__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./modules/burger */ "./src/js/modules/burger.js");
 /* harmony import */ var _modules_scrolling__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./modules/scrolling */ "./src/js/modules/scrolling.js");
+/* harmony import */ var _modules_drop__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./modules/drop */ "./src/js/modules/drop.js");
+
 
 
 
@@ -4456,6 +4458,8 @@ window.addEventListener('DOMContentLoaded', function () {
   Object(_modules_burger__WEBPACK_IMPORTED_MODULE_10__["default"])('.burger-menu', '.burger'); // функция для работы бургер меню
 
   Object(_modules_scrolling__WEBPACK_IMPORTED_MODULE_11__["default"])('.pageup'); // функция для плавного скролла
+
+  Object(_modules_drop__WEBPACK_IMPORTED_MODULE_12__["default"])(); // функция для возможности перетаскивания файлов в инпут
 });
 
 /***/ }),
@@ -4647,6 +4651,109 @@ var checkTextInputs = function checkTextInputs(selector) {
 };
 
 /* harmony default export */ __webpack_exports__["default"] = (checkTextInputs);
+
+/***/ }),
+
+/***/ "./src/js/modules/drop.js":
+/*!********************************!*\
+  !*** ./src/js/modules/drop.js ***!
+  \********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var core_js_modules_es_function_name__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core-js/modules/es.function.name */ "./node_modules/core-js/modules/es.function.name.js");
+/* harmony import */ var core_js_modules_es_function_name__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_function_name__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var core_js_modules_es_string_split__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! core-js/modules/es.string.split */ "./node_modules/core-js/modules/es.string.split.js");
+/* harmony import */ var core_js_modules_es_string_split__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_string_split__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! core-js/modules/web.dom-collections.for-each */ "./node_modules/core-js/modules/web.dom-collections.for-each.js");
+/* harmony import */ var core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each__WEBPACK_IMPORTED_MODULE_2__);
+
+
+
+
+var drop = function drop() {
+  // функция для возможности перетаскивания файлов в инпут
+  // события drag and drop
+  // dragenter - объект над dropArea
+  // dragleave - объект за пределами dropArea
+  // dragover - объект зависает/двигается над dropArea
+  // drop - объект отправлен в dropArea
+  var fileInputs = document.querySelectorAll('[name="upload"]'); // берем все нужные инпуты по имени
+
+  ['dragenter', 'dragleave', 'dragover', 'drop'].forEach(function (eventName) {
+    // создали массив событий и перебираем его
+    fileInputs.forEach(function (input) {
+      // перебираем все инпуты
+      inputs.addEventListener(eventName, preventDefaults, false); // навешиваем на каждый инпут все события, выполняем функцию preventDefaults, false - это настройки событий
+    });
+  });
+
+  function preventDefaults(e) {
+    // функция отмены стандартных действий браузера
+    e.preventDefault(); // отменяем стандартное поведение браузера
+
+    e.stopPropagation(); // отмена всплытия
+  }
+
+  function highlight(item) {
+    // функция для подсвечивания элемента при перетаскивании
+    item.closest('.file_upload').style.border = '5px solid yellow'; // находим ближайший элемент с нужным классом и ставим у него рамку
+
+    item.closest('.file_upload').style.backgroundColor = 'rgba(0,0,0 .7)'; // находим ближайший элемент с нужным классом и меняем его фон
+  }
+
+  function unhighlight(item) {
+    // функция для обратная предыдущей, убираем стили
+    item.closest('.file_upload').style.border = 'none'; // находим ближайший элемент с нужным классом и убираем рамку
+
+    if (item.closest('.calc_form')) {
+      // если в ближайших элементах есть элемент с классом calc_form, то
+      item.closest('.file_upload').style.backgroundColor = '#fff'; // находим ближайший элемент с нужным классом и меняем его фон (фоны на странице и в модальном окне разные)
+    } else {
+      item.closest('.file_upload').style.backgroundColor = '#ededed'; // находим ближайший элемент с нужным классом и меняем его фон
+    }
+  }
+
+  ['dragenter', 'dragover'].forEach(function (eventName) {
+    // создали массив событий и перебираем его. На события, которые происходят над dropArea навешиваем обработчики и выделяем эту зону
+    fileInputs.forEach(function (input) {
+      // перебираем все инпуты
+      inputs.addEventListener(eventName, function () {
+        return highlight(input);
+      }, false); // навешиваем на каждый инпут все события, выполняем функцию highlight, false - это настройки событий
+    });
+  });
+  ['dragleave', 'drop'].forEach(function (eventName) {
+    // создали массив событий и перебираем его. На события, когда отпускаем файл или уводим мышку навешиваем обработчик и убираем выделение этой области
+    fileInputs.forEach(function (input) {
+      // перебираем все инпуты
+      inputs.addEventListener(eventName, function () {
+        return unhighlight(input);
+      }, false); // навешиваем на каждый инпут все события, выполняем функцию unhighlight, false - это настройки событий
+    });
+  });
+  fileInputs.forEach(function (input) {
+    // перебираем инпуты
+    input.addEventListener('drop', function (e) {
+      // навешиваем обработчик события, когда файл упал в инпут
+      input.files = e.dataTransfer.files; // берем файл, который перетаскиваем и добавляем его в инпут
+
+      var dots; // переменная либо будет содержать ... либо нет
+
+      var arr = input.files[0].name.split('.'); // берем имя первого файла и split делим его на 2 части, разделитель деления . Образуется массив с 2 значениями
+
+      arr[0].length > 6 ? dots = '...' : dots = '.'; // берем первое значение массива и проверяем его длину. Если длина больше 5 символов, то dots равно ..., если меньше 6 символов, то dots = . точка нужна, т.к. в процессе появления массива от split . теряется  
+
+      var name = arr[0].substring(0, 6) + dots + arr[1]; // берем первую часть от разделения split и вырезаем первые 5 символов, далее добавляем dots - это либо ... либо . и добавляем вторую часть от split - это расширение файла
+
+      input.previousElementSibling.textContent = name; // берем предыдущий соседний элемент и заменяем его контент нужным значением
+    });
+  });
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (drop);
 
 /***/ }),
 
