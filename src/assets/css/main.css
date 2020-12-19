@@ -1424,6 +1424,9 @@ h4 {
     height: 2rem;
     margin: 0 1rem;
   }
+  .main .main-slider-item img {
+    width: 100%;
+  }
   .main-features img {
     top: 0;
   }
@@ -1575,8 +1578,15 @@ h4 {
   .card-3 img {
     float: right;
   }
+  .feedback {
+    min-height: 750px;
+  }
   .feedback-slider-item {
     padding-bottom: 0;
+  }
+  .feedback-block img {
+    display: block;
+    margin: 0 auto;
   }
   .feedback-heading {
     margin-top: 6rem;
@@ -1759,5 +1769,13 @@ h4 {
   .popup-content {
     padding: 3rem 3rem;
     width: 25rem;
+  }
+}
+@media (max-width: 420px) {
+  .feedback {
+    min-height: 790px;
+  }
+  .feedback-block img {
+    width: 100%;
   }
 }

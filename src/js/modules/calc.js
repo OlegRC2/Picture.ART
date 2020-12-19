@@ -19,10 +19,18 @@ const calc = (size, material, options, promocode, result) => {                  
         }
     };
 
-    sizeBlock.addEventListener('change', calcFunction());                                       // вешаем обработчик изменения на селект размера и запускаем в нем функцию расчета
-    materialBlock.addEventListener('change', calcFunction());                                   // вешаем обработчик изменения на селект материала и запускаем в нем функцию расчета
-    optionsBlock.addEventListener('change', calcFunction());                                    // вешаем обработчик изменения на селект доп. услуг и запускаем в нем функцию расчета
-    promocodeBlock.addEventListener('input', calcFunction());                                   // вешаем обработчик инпута на инпут промокода и запускаем в нем функцию расчета
+    sizeBlock.addEventListener('change', () => {
+        calcFunction();
+    });                                       // вешаем обработчик изменения на селект размера и запускаем в нем функцию расчета
+    materialBlock.addEventListener('change', () => {
+        calcFunction();
+    });                                   // вешаем обработчик изменения на селект материала и запускаем в нем функцию расчета
+    optionsBlock.addEventListener('change', () => {
+        calcFunction()
+    });                                    // вешаем обработчик изменения на селект доп. услуг и запускаем в нем функцию расчета
+    promocodeBlock.addEventListener('input', () => {
+        calcFunction()
+    });                                   // вешаем обработчик инпута на инпут промокода и запускаем в нем функцию расчета
 };
 
 export default calc;

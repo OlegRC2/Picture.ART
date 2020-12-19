@@ -33,21 +33,4 @@ window.addEventListener('DOMContentLoaded', () => {                             
     burger('.burger-menu', '.burger');                                          // функция для работы бургер меню
     scrolling('.pageup');                                                       // функция для плавного скролла
     drop();                                                                     // функция для возможности перетаскивания файлов в инпут
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 });

@@ -9,7 +9,7 @@ const drop = () => {                                                            
 
     ['dragenter', 'dragleave', 'dragover', 'drop'].forEach(eventName => {                               // создали массив событий и перебираем его
         fileInputs.forEach(input => {                                                                   // перебираем все инпуты
-            inputs.addEventListener(eventName, preventDefaults, false);                                 // навешиваем на каждый инпут все события, выполняем функцию preventDefaults, false - это настройки событий
+            input.addEventListener(eventName, preventDefaults, false);                                 // навешиваем на каждый инпут все события, выполняем функцию preventDefaults, false - это настройки событий
         });
     });
 
@@ -35,13 +35,13 @@ const drop = () => {                                                            
 
     ['dragenter', 'dragover'].forEach(eventName => {                                                    // создали массив событий и перебираем его. На события, которые происходят над dropArea навешиваем обработчики и выделяем эту зону
         fileInputs.forEach(input => {                                                                   // перебираем все инпуты
-            inputs.addEventListener(eventName, () => highlight(input), false);                          // навешиваем на каждый инпут все события, выполняем функцию highlight, false - это настройки событий
+            input.addEventListener(eventName, () => highlight(input), false);                          // навешиваем на каждый инпут все события, выполняем функцию highlight, false - это настройки событий
         });
     });
 
     ['dragleave', 'drop'].forEach(eventName => {                                                        // создали массив событий и перебираем его. На события, когда отпускаем файл или уводим мышку навешиваем обработчик и убираем выделение этой области
         fileInputs.forEach(input => {                                                                   // перебираем все инпуты
-            inputs.addEventListener(eventName, () => unhighlight(input), false);                        // навешиваем на каждый инпут все события, выполняем функцию unhighlight, false - это настройки событий
+            input.addEventListener(eventName, () => unhighlight(input), false);                        // навешиваем на каждый инпут все события, выполняем функцию unhighlight, false - это настройки событий
         });
     });
 
